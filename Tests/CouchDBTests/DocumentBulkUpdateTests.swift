@@ -23,7 +23,6 @@ import Darwin
 #endif
 
 import Foundation
-import SwiftyJSON
 
 @testable import CouchDB
 

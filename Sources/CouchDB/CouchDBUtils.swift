@@ -16,7 +16,6 @@
 
 import Foundation
 import KituraNet
-import SwiftyJSON
 
 class CouchDBUtils {
     static let couchDBDomain = "CouchDBDomain"
@@ -48,7 +47,9 @@ class CouchDBUtils {
     }
 
     class func createError(_ code: HTTPStatusCode, errorDesc: JSON?, id: String?, rev: String?) -> NSError {
-        if let errorDesc = errorDesc, let err = errorDesc["error"].string, let reason = errorDesc["reason"].string {
+        if let errorDesc = errorDesc {
+            let err = errorDesc.error
+            let reason = errorDesc.reason
             return createError(code.rawValue, desc: "Error: \(err), reason: \(reason)", id: id, rev: nil)
         }
         return createError(code, id: id, rev: rev)
@@ -81,7 +82,7 @@ class CouchDBUtils {
         do {
             var body = Data()
             try response.readAllData(into: &body)
-            let json = JSON(data: body)
+            let json = try JSONDecoder().decode(JSON.self, from: body)
             return json
         } catch {
             //Log this exception

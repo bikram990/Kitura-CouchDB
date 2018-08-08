@@ -21,7 +21,6 @@
 #endif
 
 import Foundation
-import SwiftyJSON
 import CouchDB
 import LoggerAPI
 import HeliumLogger
@@ -125,20 +124,20 @@ let jsonDict: [String: valuetype] = [
     "favorited": false as valuetype,
     "value": "value1" as valuetype
 ]
-#if os(Linux)
-let json = JSON(jsonDict)
-#else
-let json = JSON(jsonDict as AnyObject)
-#endif
 
+let error = NSError()
+guard let jsonData = try? JSONSerialization.data(withJSONObject: jsonDict, options: .prettyPrinted) else { throw error }
+guard let decoded = try? JSONSerialization.jsonObject(with: jsonData, options: []) else { throw error }
+guard let jsonDesc = decoded as? JSON else { throw error }
+let json = jsonDesc
 
 // MARK: Chainer
 
 func chainer(_ document: JSON?, next: (String) -> Void) {
-    if let revisionNumber = document?["rev"].string {
+    if let revisionNumber = document?.rev {
         Log.info("revisionNumber is \(revisionNumber)")
         next(revisionNumber)
-    } else if let revisionNumber = document?["_rev"].string {
+    } else if let revisionNumber = document?.underscoreRev {
         Log.info("revisionNumber is \(revisionNumber)")
         next(revisionNumber)
     } else {

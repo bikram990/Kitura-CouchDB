@@ -15,7 +15,6 @@
  **/
 
 import Foundation
-import SwiftyJSON
 import KituraNet
 
 // MARK: Users Database
@@ -33,7 +32,9 @@ public class UsersDatabase: Database {
     ///     - callback: Callback containing the username, JSON response,
     ///                 and an NSError if one occurred.
     public func createUser(document: JSON, callback: @escaping (String?, JSON?, NSError?) -> ()) {
-        if let requestBody = document.rawString(), let name = document["name"].string {
+        do {
+            let requestBody = try JSONEncoder().encode(document)
+            let name = document.name
             let id = "org.couchdb.user:\(name)"
             var doc: JSON?
             let requestOptions = CouchDBUtils.prepareRequest(connProperties,
@@ -54,10 +55,8 @@ public class UsersDatabase: Database {
                 callback(id, doc, error)
             }
             req.end(requestBody)
-        } else {
-            callback(nil,
-                     nil,
-                     CouchDBUtils.createError(Database.InvalidDocument, id: nil, rev: nil))
+        } catch {
+            print("error")
         }
     }
 
@@ -71,13 +70,16 @@ public class UsersDatabase: Database {
         retrieve(id, callback: { (doc, error) in
             var json = JSONDictionary()
             if let document = doc, error == nil {
-                json["user"] = document.object
+                json["user"] = document
             }
-            #if os(Linux)
-                callback(JSON(json), error)
-            #else
-                callback(JSON(json as AnyObject), error)
-            #endif
+            let jsonDict = json
+            if let jsonData = try? JSONSerialization.data(withJSONObject: jsonDict, options: .prettyPrinted) {
+                if let decoded = try? JSONSerialization.jsonObject(with: jsonData, options: []) {
+                    if let jsonDesc = decoded as? JSON {
+                        callback(jsonDesc, error)
+                    }
+                }
+            }
         })
     }
 }

@@ -23,7 +23,6 @@ import XCTest
 #endif
 
 import Foundation
-import SwiftyJSON
 
 @testable import CouchDB
 
@@ -45,10 +44,10 @@ class DocumentViewTests: CouchDBTest {
     }
 
     func chainer(_ document: JSON?, next: (_ revisionNumber: String) -> Void) {
-        if let revisionNumber = document?["rev"].string {
+        if let revisionNumber = document?.rev {
             print("revisionNumber is \(revisionNumber)")
             next(revisionNumber)
-        } else if let revisionNumber = document?["_rev"].string {
+        } else if let revisionNumber = document?.underscoreRev {
             print("revisionNumber is \(revisionNumber)")
             next(revisionNumber)
         } else {

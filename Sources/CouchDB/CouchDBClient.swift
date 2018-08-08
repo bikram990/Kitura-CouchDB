@@ -15,7 +15,6 @@
  **/
 
 import Foundation
-import SwiftyJSON
 import KituraNet
 
 // MARK: CouchDBClient
@@ -72,8 +71,11 @@ public class CouchDBClient {
                     db = Database(connProperties: self.connProperties, dbName: dbName)
                 } else {
                     if let descOpt = try? response.readString(), let desc = descOpt {
-                        error = CouchDBUtils.createError(response.statusCode,
-                                                         errorDesc: JSON.parse(string: desc), id: nil, rev: nil)
+                        guard let errorData = desc.data(using: .utf8) else { return }
+                        if let errorDesc = try? JSONSerialization.jsonObject(with: errorData, options: .allowFragments) as? JSON {
+                            error = CouchDBUtils.createError(response.statusCode,
+                                                         errorDesc: errorDesc, id: nil, rev: nil)
+                        }
                     } else {
                         error = CouchDBUtils.createError(response.statusCode, id: nil, rev: nil)
                     }
@@ -131,8 +133,11 @@ public class CouchDBClient {
             if let response = response {
                 if response.statusCode != HTTPStatusCode.OK {
                     if let descOpt = try? response.readString(), let desc = descOpt {
-                        error = CouchDBUtils.createError(response.statusCode,
-                                                         errorDesc: JSON.parse(string: desc), id: nil, rev: nil)
+                        guard let errorData = desc.data(using: .utf8) else { return }
+                        if let errorDesc = try? JSONSerialization.jsonObject(with: errorData, options: .allowFragments) as? JSON {
+                            error = CouchDBUtils.createError(response.statusCode,
+                                                         errorDesc: errorDesc, id: nil, rev: nil)
+                        }
                     } else {
                         error = CouchDBUtils.createError(response.statusCode, id: nil, rev: nil)
                     }
@@ -166,17 +171,17 @@ public class CouchDBClient {
                     do {
                         try response.readAllData(into: &data)
 
-                        let responseJSON = JSON(data: data)
+                        let responseJSON = try JSONDecoder().decode(JSON.self, from: data)
 
-                        let uuidsJSON = responseJSON["uuids"]
+                        let uuidsJSON = responseJSON.uuids
 
                         #if swift(>=4.1)
-                        uuids = uuidsJSON.array?.compactMap({ (uuidJSON) -> String? in
-                            return uuidJSON.string
+                        uuids = uuidsJSON.compactMap({ (uuidJSON) -> String? in
+                            return uuidJSON
                         })
                         #else
-                        uuids = uuidsJSON.array?.flatMap({ (uuidJSON) -> String? in
-                            return uuidJSON.string
+                        uuids = uuidsJSON.flatMap({ (uuidJSON) -> String? in
+                            return uuidJSON
                         })
                         #endif
                     } catch let caughtError {
@@ -232,14 +237,23 @@ public class CouchDBClient {
             }
             callback(configError)
         }
-        #if os(Linux)
-            let body = JSON("\"\(value)\"")
-        #else
-            let body = JSON("\"\(value)\"" as NSString)
-        #endif
-
-        if let body = body.rawString() {
-            req.end(body)
+        let valueString = "\"\(value)\""
+        if let valueData = try? JSONSerialization.data(withJSONObject: valueString, options: .prettyPrinted) {
+            if let decoded = try? JSONSerialization.jsonObject(with: valueData, options: []) {
+                if let valueDesc = decoded as? JSON {
+                    let body = valueDesc
+                    do {
+                        let body = try JSONEncoder().encode(body)
+                        req.end(body)
+                    } catch {
+                        req.end()
+                    }
+                } else {
+                    req.end()
+                }
+            } else {
+                req.end()
+            }
         } else {
             req.end()
         }
@@ -262,14 +276,10 @@ public class CouchDBClient {
             var configJSON: JSON?
             if let response = response {
                 do {
-                    let body = try response.readString()
-                    if let body = body {
-                        #if os(Linux)
-                            configJSON = JSON(body)
-                        #else
-                            configJSON = JSON(body as NSString)
-                        #endif
-                    }
+                    var responseData = Data()
+                    try response.readAllData(into: &responseData)
+                    let body = try JSONDecoder().decode(JSON.self, from: responseData)
+                    configJSON = body
                 } catch {
                     configError = CouchDBUtils.createError(response.statusCode, id: nil, rev: nil)
                 }
@@ -389,5 +399,25 @@ public class CouchDBClient {
             callback(cookie, document, error)
         }
         req.end()
+    }
+}
+
+public struct JSON: Codable {
+    public var name: String
+    public var rev: String
+    public var underscoreRev: String
+    public var id: String
+    public var error: String
+    public var reason: String
+    public var uuids: [String]
+    
+    public enum CodingKeys: String, CodingKey {
+        case name = "name"
+        case rev = "rev"
+        case underscoreRev = "_rev"
+        case id = "id"
+        case error = "error"
+        case reason = "reason"
+        case uuids = "uuids"
     }
 }

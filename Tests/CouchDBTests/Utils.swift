@@ -23,7 +23,6 @@ import XCTest
 #endif
 
 import Foundation
-import SwiftyJSON
 
 class Utils {
 
