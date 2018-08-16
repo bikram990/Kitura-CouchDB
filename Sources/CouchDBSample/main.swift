@@ -133,7 +133,7 @@ let json = jsonDesc
 
 // MARK: Chainer
 
-func chainer(_ document: JSON?, next: (String) -> Void) {
+func chainer(_ document: Document?, next: (String) -> Void) {
     if let revisionNumber = document?.rev {
         Log.info("revisionNumber is \(revisionNumber)")
         next(revisionNumber)
@@ -164,7 +164,7 @@ func createDocument() {
 // MARK: Read document
 
 func readDocument() {
-    database.retrieve(documentId as String, callback: { (document: JSON?, error: NSError?) in
+    database.retrieve(documentId as String, callback: { (document: Document?, error: NSError?) in
         if let error = error {
             Log.error("Oops something went wrong; could not read document.")
             Log.error("Error: \(error.localizedDescription) Code: \(error.code)")
@@ -182,8 +182,8 @@ func readDocument() {
 func updateDocument(revisionNumber: String) {
     //var json = JSON(data: jsonData!)
     //json["value"] = "value2"
-    database.update(documentId as String, rev: revisionNumber, document: json,
-        callback: { (rev: String?, document: JSON?, error: NSError?) in
+    database.update(documentId as String, rev: revisionNumber, document: Document,
+        callback: { (rev: String?, document: Document?, error: NSError?) in
             if let error = error {
                 Log.error(">> Oops something went wrong; could not update document.")
                 Log.error("Error: \(error.localizedDescription) Code: \(error.code)")

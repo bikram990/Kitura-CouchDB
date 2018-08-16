@@ -66,10 +66,10 @@ class DocumentCrudTests: CouchDBTest {
     }
 
     func chainer(_ document: JSON?, next: (String) -> Void) {
-        if let revisionNumber = document?["rev"].string {
+        if let revisionNumber = document?.rev {
             print("revisionNumber is \(revisionNumber)")
             next(revisionNumber)
-        } else if let revisionNumber = document?["_rev"].string {
+        } else if let revisionNumber = document?.underscoreRev {
             print("revisionNumber is \(revisionNumber)")
             next(revisionNumber)
         } else {
@@ -96,8 +96,8 @@ class DocumentCrudTests: CouchDBTest {
                 XCTFail("Error in rereading document \(error!.code) \(error!.domain) \(error!.userInfo)")
             } else {
                 guard let document = document,
-                    let id = document["_id"].string,
-                    let value = document["value"].string else {
+                    let id = document.underscoreId,
+                    let value = document.value else {
                         XCTFail("Error: Keys not found when rereading document")
                         exit(1)
                 }
@@ -114,13 +114,13 @@ class DocumentCrudTests: CouchDBTest {
     //Update document
     func updateDocument(_ revisionNumber: String) {
         //var json = JSON(data: jsonData!)
-        jsonDocument!["value"] = "value2"
+        jsonDocument!.value = "value2"
         database!.update(documentId1, rev: revisionNumber, document: jsonDocument!, callback: { (rev: String?, document: JSON?, error: NSError?) in
             if (error != nil) {
                 XCTFail("Error in updating document \(error!.code) \(error!.domain) \(error!.userInfo)")
             } else {
                 guard let document = document,
-                    let id = document["id"].string else {
+                    let id = document.id else {
                         XCTFail("Error: Keys not found when reading updated document")
                         exit(1)
                 }
@@ -138,8 +138,8 @@ class DocumentCrudTests: CouchDBTest {
                XCTFail("Error in reading document \(error!.code) \(error!.domain) \(error!.userInfo)")
             } else {
                 guard let document = document,
-                    let id = document["_id"].string,
-                    let value = document["value"].string else {
+                    let id = document.id,
+                    let value = document.value else {
                         XCTFail("Error: Keys not found when reading document")
                         exit(1)
                 }
@@ -154,27 +154,27 @@ class DocumentCrudTests: CouchDBTest {
 
     // Retrieve all documents
     func retrieveAll() {
-        database!.retrieveAll(includeDocuments: true, callback: { (document: JSON?, error: NSError?) in
+        database!.retrieveAll(includeDocuments: true, callback: { (document: Document?, error: NSError?) in
             if error != nil {
                 XCTFail("Error in retrieving all documents \(error!.code) \(error!.domain) \(error!.userInfo)")
             } else {
                 guard let document = document,
-                    let totalRows = document["total_rows"].number, totalRows == 2 else {
+                    let totalRows = document.totalRows, totalRows == 2 else {
                         XCTFail("Error: Wrong number of documents")
                         exit(1)
                 }
-                let document1 = document["rows"][0]["doc"]
-                guard let id1 = document1["_id"].string,
-                    let value1 = document1["value"].string else {
+                let document1 = document.rows[0].doc
+                guard let id1 = document1?.underscoreId,
+                    let value1 = document1?.value else {
                         XCTFail("Error: Keys not found when reading document")
                         exit(1)
                 }
                 XCTAssertEqual(self.documentId1, id1, "Wrong documentId read from document")
                 XCTAssertEqual("value1", value1, "Wrong value read from document")
 
-                let document2 = document["rows"][1]["doc"]
-                guard let id2 = document2["_id"].string,
-                    let value2 = document2["value"].string else {
+                let document2 = document.rows[1].doc
+                guard let id2 = document2?.underscoreId,
+                    let value2 = document2?.value else {
                         XCTFail("Error: Keys not found when reading document")
                         exit(1)
                 }
@@ -190,11 +190,12 @@ class DocumentCrudTests: CouchDBTest {
 
     //Create document closure
     func createDocument(fromJSONString jsonString: String) {
-       // Convert JSON string to NSData
-        let jsonData = jsonString.data(using: .utf8)
+        // Convert JSON string to NSData
+        guard let jsonData = jsonString.data(using: .utf8) else { return }
         // Convert NSData to JSON object
-        jsonDocument = JSON(data: jsonData!)
-        database!.create(jsonDocument!, callback: { (id: String?, rev: String?, document: JSON?, error: NSError?) in
+        guard let decoded = try? JSONSerialization.jsonObject(with: jsonData, options: []) else { return }
+        guard let jsonDesc = decoded as? JSON else { return }
+        database!.create(jsonDesc, callback: { (id: String?, rev: String?, document: JSON?, error: NSError?) in
             if (error != nil) {
                 XCTFail("Error in creating document \(error!.code) \(error!.domain) \(error!.userInfo)")
             } else {

@@ -38,39 +38,57 @@ class DocumentBulkUpdateTests: CouchDBTest {
     }
 
     // MARK: - Database test objects
-
-    let json1 = JSON(["_id": "1234567",
-                      "type": "user",
-                      "firstName": "John",
-                      "lastName": "Doe",
-                      "birthdate": "1985-01-23"])
-    let json2 = JSON(["_id": "8901234",
-                      "type": "user",
-                      "firstName": "Mike",
-                      "lastName": "Wazowski",
-                      "birthdate": "1981-09-04"])
-    let json3 = JSON(["_id": "5678901",
-                      "type": "address",
-                      "name": "139 Edgefield St. Honolulu, HI 96815",
-                      "country": "United States",
-                      "city": "Honolulu",
-                      "latitude": 21.319820,
-                      "longitude": -157.865501])
-    let json4 = JSON(["_id": "2345678",
-                      "type": "address",
-                      "name": "79 Pumpkin Hill Road Monstropolis, MN 37803",
-                      "country": "United States",
-                      "city": "Monstropolis",
-                      "latitude": 44.961098,
-                      "longitude": -93.176732])
-    let json5 = JSON(["_id": "9012345",
-                      "type": "userAddress",
-                      "userId": "1234567",
-                      "addressId": "5678901"])
-    let json6 = JSON(["_id": "6789012",
-                      "type": "userAddress",
-                      "userId": "8901234",
-                      "addressId": "2345678"])
+    var json1: JSON
+    var json2: JSON
+    var json3: JSON
+    var json4: JSON
+    var json5: JSON
+    var json6: JSON
+    
+    override init() {
+        json1 = dictionaryToJSON(["_id": "1234567",
+                                  "type": "user",
+                                  "firstName": "John",
+                                  "lastName": "Doe",
+                                  "birthdate": "1985-01-23"])
+        json2 = dictionaryToJSON(["_id": "8901234",
+                                  "type": "user",
+                                  "firstName": "Mike",
+                                  "lastName": "Wazowski",
+                                  "birthdate": "1981-09-04"])
+        json3 = dictionaryToJSON(["_id": "5678901",
+                                  "type": "address",
+                                  "name": "139 Edgefield St. Honolulu, HI 96815",
+                                  "country": "United States",
+                                  "city": "Honolulu",
+                                  "latitude": 21.319820,
+                                  "longitude": -157.865501])
+        json4 = dictionaryToJSON(["_id": "2345678",
+                                  "type": "address",
+                                  "name": "79 Pumpkin Hill Road Monstropolis, MN 37803",
+                                  "country": "United States",
+                                  "city": "Monstropolis",
+                                  "latitude": 44.961098,
+                                  "longitude": -93.176732])
+        json5 = dictionaryToJSON(["_id": "9012345",
+                                  "type": "userAddress",
+                                  "userId": "1234567",
+                                  "addressId": "5678901"])
+        json6 = dictionaryToJSON(["_id": "6789012",
+                                  "type": "userAddress",
+                                  "userId": "8901234",
+                                  "addressId": "2345678"])
+    }
+    
+    func dictionaryToJSON(_ dictionary: [String: Any]) -> JSON {
+        if let jsonData1 = try? JSONSerialization.data(withJSONObject: dictionary, options: .prettyPrinted) {
+            if let decoded1 = try? JSONSerialization.jsonObject(with: jsonData1, options: []) {
+                if let jsonDesc1 = decoded1 as? JSON {
+                    return jsonDesc1
+                }
+            }
+        }
+    }
 
     // MARK: - Xcode tests
 

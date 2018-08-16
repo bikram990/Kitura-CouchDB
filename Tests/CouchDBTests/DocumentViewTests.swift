@@ -62,11 +62,11 @@ class DocumentViewTests: CouchDBTest {
 #else
         let key: NSString = "viewTest"
 #endif
-        database!.queryByView("matching", ofDesign: "test", usingParameters: [.keys([key])]) { (document: JSON?, error: NSError?) in
+        database!.queryByView("matching", ofDesign: "test", usingParameters: [.keys([key])]) { (document: Document?, error: NSError?) in
             if let error = error {
                 XCTFail("Error in querying by view document \(error.code) \(error.domain) \(error.userInfo)")
             } else {
-                guard let id = document!["rows"][0]["id"].string, let value = document!["rows"][0]["value"]["value"].string, value == "viewTest" else {
+                guard let id = document!.rows[0].id, let value = document!.rows[0].value.value, value == "viewTest" else {
                     XCTFail("Error: Keys not found when reading document")
                     exit(1)
                 }
@@ -94,10 +94,11 @@ class DocumentViewTests: CouchDBTest {
         "}"
 
         // Convert JSON string to NSData
-        let jsonData = jsonStr.data(using: .utf8)
+        guard let jsonData = jsonStr.data(using: .utf8) else { return }
         // Convert NSData to JSON object
-        jsonDocument = JSON(data: jsonData!)
-        database!.create(jsonDocument!, callback: { (id: String?, rev: String?, document: JSON?, error: NSError?) in
+        guard let decoded = try? JSONSerialization.jsonObject(with: jsonData, options: []) else { return }
+        guard let jsonDesc = decoded as? JSON else { return }
+        database!.create(jsonDesc, callback: { (id: String?, rev: String?, document: JSON?, error: NSError?) in
             if let error = error {
                 XCTFail("Error in creating document \(error.code) \(error.domain) \(error.userInfo)")
             } else {
@@ -128,7 +129,10 @@ class DocumentViewTests: CouchDBTest {
                     ]
             ]
         #endif
-        database!.createDesign(name, document: JSON(designDocument)) { (document: JSON?, error: NSError?) in
+        guard let jsonData = try? JSONSerialization.data(withJSONObject: designDocument, options: .prettyPrinted) else { return }
+        guard let decoded = try? JSONSerialization.jsonObject(with: jsonData, options: []) else { return }
+        guard let jsonDesc = decoded as? JSON else { return }
+        database!.createDesign(name, document: jsonDesc) { (document: JSON?, error: NSError?) in
             if let error = error {
                 XCTFail("Error in creating document \(error.code) \(error.domain) \(error.userInfo)")
             } else {

@@ -58,18 +58,21 @@ class Utils {
             exit(1)
         }
         // Convert NSData to JSON object
-        let credentialsJson = JSON(data: credentialsData)
-
-        guard
-          let hostName = credentialsJson["host"].string,
-          let port = credentialsJson["port"].int16
-        else {
-            XCTFail("Error in credentials.json.")
+        guard let decoded = try? JSONSerialization.jsonObject(with: credentialsData, options: []) else {
+            XCTFail("Failed to read in the credentials.json file")
+            exit(1)
+        }
+        guard let credentialsJson = decoded as? JSON else {
+            XCTFail("Failed to read in the credentials.json file")
+            exit(1)
+        }
+        guard let hostName = credentialsJson["host"].string, let port = credentialsJson["port"].int16 else {
+            XCTFail("Failed to read in the credentials.json file")
             exit(1)
         }
         let userName = credentialsJson["username"].string
         let password = credentialsJson["password"].string
-
+                
         print(">> Successfully read in credentials.")
         return Credentials(host: hostName, port: port, username: userName, password: password)
     }

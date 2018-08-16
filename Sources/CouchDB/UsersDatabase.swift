@@ -73,13 +73,10 @@ public class UsersDatabase: Database {
                 json["user"] = document
             }
             let jsonDict = json
-            if let jsonData = try? JSONSerialization.data(withJSONObject: jsonDict, options: .prettyPrinted) {
-                if let decoded = try? JSONSerialization.jsonObject(with: jsonData, options: []) {
-                    if let jsonDesc = decoded as? JSON {
-                        callback(jsonDesc, error)
-                    }
-                }
-            }
+            guard let jsonData = try? JSONSerialization.data(withJSONObject: jsonDict, options: .prettyPrinted) else { return }
+            guard let decoded = try? JSONSerialization.jsonObject(with: jsonData, options: []) else { return }
+            guard let jsonDesc = decoded as? JSON else { return }
+            callback(jsonDesc, error)
         })
     }
 }

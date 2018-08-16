@@ -176,7 +176,8 @@ public class CouchDBClient {
                         let uuidsJSON = responseJSON.uuids
 
                         #if swift(>=4.1)
-                        uuids = uuidsJSON.compactMap({ (uuidJSON) -> String? in
+                        guard let uuidJSON = uuidsJSON else { return }
+                        uuids = uuidJSON.compactMap({ (uuidJSON) -> String? in
                             return uuidJSON
                         })
                         #else
@@ -403,21 +404,82 @@ public class CouchDBClient {
 }
 
 public struct JSON: Codable {
-    public var name: String
-    public var rev: String
-    public var underscoreRev: String
-    public var id: String
-    public var error: String
-    public var reason: String
-    public var uuids: [String]
+    public var name: String?
+    public var rev: String?
+    public var underscoreRev: String?
+    public var id: String?
+    public var underscoreId: String?
+    public var doc: Doc?
+    public var value: Value
+    public var error: String?
+    public var reason: String?
+    public var uuids: [String]?
+    
+    init(name: String?, rev: String?, underscoreRev: String?, id: String?, underscoreId: String?, doc: Doc?, value: Value, error: String?, reason: String?, uuids: [String]?) {
+        self.name = name
+        self.rev = rev
+        self.id = id
+        self.doc = doc
+        self.value = value
+        self.error = error
+        self.reason = reason
+        self.uuids = uuids
+        self.underscoreRev = underscoreRev
+        self.underscoreId = underscoreId
+    }
+    
+    public init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        name = try values.decode(String.self, forKey: .name)
+        rev = try values.decode(String.self, forKey: .rev)
+        underscoreRev = try values.decode(String.self, forKey: .underscoreRev)
+        id = try values.decode(String.self, forKey: .id)
+        underscoreId = try values.decode(String.self, forKey: .underscoreId)
+        doc = try values.decode(Doc.self, forKey: .doc)
+        value = try values.decode(Value.self, forKey: .value)
+        error = try values.decode(String.self, forKey: .error)
+        reason = try values.decode(String.self, forKey: .reason)
+        uuids = try values.decode([String].self, forKey: .uuids)
+    }
     
     public enum CodingKeys: String, CodingKey {
-        case name = "name"
-        case rev = "rev"
+        case name
+        case rev
+        case id
+        case doc
+        case value
+        case error
+        case reason
+        case uuids
         case underscoreRev = "_rev"
-        case id = "id"
-        case error = "error"
-        case reason = "reason"
-        case uuids = "uuids"
+        case underscoreId = "_id"
+    }
+}
+
+public struct Value: Codable {
+    public var value: String?
+}
+
+public struct Document: Codable {
+    public var rows: [JSON]
+    public var id: String?
+    public var rev: String?
+    public var underscoreRev: String?
+    
+    public enum CodingKeys: String, CodingKey {
+        case rows
+        case id
+        case rev
+        case underscoreRev = "_rev"
+    }
+}
+
+public struct Doc: Codable {
+    public var value: String?
+    public var underscoreId: String?
+    
+    public enum CodingKeys: String, CodingKey {
+        case value
+        case underscoreId = "_id"
     }
 }
